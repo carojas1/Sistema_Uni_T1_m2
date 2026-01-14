@@ -1,11 +1,14 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../prisma/generated/client-support"
+  output   = "./generated/client-support"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_SUPPORT_URL")
 }
+
 
 
 model AuditLog {

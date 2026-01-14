@@ -1,11 +1,14 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../prisma/generated/client-academic"
+  output   = "./generated/client-academic"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_ACADEMIC_URL")
 }
+
 
 
 // Note: User relation is logical via userId, not a DB foreign key

@@ -1,13 +1,20 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client-academic';
 import { Pool } from 'pg';
+import { join } from 'path';
+
+// Type-only import to satisfy TypeScript
+import type { PrismaClient as PrismaClientType } from '../../prisma/generated/client-academic';
+
+// Runtime import using absolute path stable for src/ and dist/
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { PrismaClient } = require(join(process.cwd(), 'prisma/generated/client-academic'));
 
 @Injectable()
-export class PrismaAcademicService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaAcademicService extends (PrismaClient as { new(options?: any): PrismaClientType }) implements OnModuleInit, OnModuleDestroy {
     constructor() {
         const pool = new Pool({
-            connectionString: process.env.DATABASE_ACADEMIC_URL,
+            connectionString: String(process.env.DATABASE_ACADEMIC_URL),
         });
 
         const adapter = new PrismaPg(pool);

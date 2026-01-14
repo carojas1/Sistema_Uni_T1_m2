@@ -1,4 +1,4 @@
-import { User as PrismaUser } from '@prisma/client-auth';
+import { User as PrismaUser } from '../../../prisma/generated/client-auth';
 
 export class User implements PrismaUser {
   id: number;

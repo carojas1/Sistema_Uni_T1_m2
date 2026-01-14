@@ -1,0 +1,13 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client-test"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:postgres@localhost:5432/universidad_auth?schema=public"
+}
+
+model Test {
+  id Int @id @default(autoincrement())
+}

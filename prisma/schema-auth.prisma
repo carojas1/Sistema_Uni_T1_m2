@@ -1,11 +1,14 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../prisma/generated/client-auth"
+  output   = "./generated/client-auth"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_AUTH_URL")
 }
+
 
 
 model User {
