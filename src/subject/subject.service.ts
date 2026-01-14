@@ -5,7 +5,7 @@ import { UpdateSubjectDto } from './dto/update-subject.dto';
 
 @Injectable()
 export class SubjectService {
-  constructor(private prismaAcademic: PrismaAcademicService) {}
+  constructor(private prismaAcademic: PrismaAcademicService) { }
 
   async create(createSubjectDto: CreateSubjectDto) {
     const [career, cycle] = await Promise.all([
@@ -32,7 +32,7 @@ export class SubjectService {
 
   async findAll(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
-    
+
     const [data, total] = await Promise.all([
       this.prismaAcademic.subject.findMany({
         skip,
@@ -84,7 +84,7 @@ export class SubjectService {
 
   async update(id: number, updateSubjectDto: UpdateSubjectDto) {
     await this.findOne(id);
-    
+
     if (updateSubjectDto.careerId) {
       const career = await this.prismaAcademic.career.findUnique({
         where: { id: updateSubjectDto.careerId },
@@ -117,9 +117,41 @@ export class SubjectService {
 
   async remove(id: number) {
     await this.findOne(id);
-    
+
     return this.prismaAcademic.subject.delete({
       where: { id },
+    });
+  }
+
+  /**
+   * PARTE 1.B: Obtener las materias asociadas a una carrera específica
+   * GET /subjects/by-career/:careerId
+   */
+  async findByCareer(careerId: number) {
+    const career = await this.prismaAcademic.career.findUnique({
+      where: { id: careerId },
+    });
+
+    if (!career) {
+      throw new NotFoundException(`Career with ID ${careerId} not found`);
+    }
+
+    return this.prismaAcademic.subject.findMany({
+      where: {
+        careerId,
+      },
+      include: {
+        career: {
+          include: {
+            specialty: true,
+          },
+        },
+        cycle: true,
+      },
+      orderBy: [
+        { cycle: { number: 'asc' } },
+        { name: 'asc' },
+      ],
     });
   }
 }
