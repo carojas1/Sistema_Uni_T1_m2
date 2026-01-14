@@ -122,13 +122,13 @@ async function main() {
         skipDuplicates: true,
     });
 
-    console.log('✅ Auth database seeded successfully (Idempotent)');
+    console.log(' Auth database seeded successfully (Idempotent)');
     console.log('Users processed:', { adminUser: adminUser.email, studentUser: studentUser.email, teacherUser: teacherUser.email });
 }
 
 main()
     .catch((e) => {
-        console.error('❌ Error seeding auth database:', e);
+        console.error(' Error seeding auth database:', e);
         process.exit(1);
     })
     .finally(async () => {

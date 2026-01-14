@@ -53,13 +53,13 @@ async function main() {
         },
     });
 
-    console.log('✅ Support database seeded successfully');
+    console.log(' Support database seeded successfully');
     console.log('Created: 2 audit logs and 3 system logs');
 }
 
 main()
     .catch((e) => {
-        console.error('❌ Error seeding support database:', e);
+        console.error(' Error seeding support database:', e);
         process.exit(1);
     })
     .finally(async () => {

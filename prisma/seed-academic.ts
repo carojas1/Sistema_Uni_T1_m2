@@ -183,7 +183,7 @@ async function main() {
 
 main()
     .catch((e) => {
-        console.error('❌ Error seeding academic database:', e);
+        console.error(' Error seeding academic database:', e);
         process.exit(1);
     })
     .finally(async () => {
