@@ -7,7 +7,9 @@ export class EnrollmentController {
     constructor(private readonly enrollmentService: EnrollmentService) { }
 
     /**
-     * PARTE 4: Endpoint para matricular estudiante (Transacción ACID)
+     * Ejecuta una transacción ACID completa para matricular un estudiante en una materia.
+     * Se validan todas las reglas de negocio y se garantiza atomicidad mediante el uso
+     * de transacciones explícitas de Prisma.
      */
     @Post()
     enrollStudent(@Body() createEnrollmentDto: CreateEnrollmentDto) {
@@ -15,8 +17,9 @@ export class EnrollmentController {
     }
 
     /**
-     * PARTE 3: Reporte SQL nativo - Estudiantes con total de materias matriculadas
-     * ⚠️ RUTA FIJA - Debe estar ANTES de rutas dinámicas
+     * Genera un reporte mediante consulta SQL nativa ejecutada con $queryRaw.
+     * Retorna el nombre completo del estudiante, su carrera y el número total
+     * de materias en las que se encuentra matriculado, ordenado descendentemente.
      */
     @Get('report')
     getEnrollmentReport() {
@@ -24,8 +27,8 @@ export class EnrollmentController {
     }
 
     /**
-     * PARTE 1.D: Matrículas de un estudiante en un período académico
-     * ⚠️ RUTA FIJA CON PARÁMETROS - Debe estar ANTES de /:id simple
+     * Retorna todas las matrículas de un estudiante específico en un periodo académico determinado.
+     * Esta consulta derivada incluye información completa de la materia, carrera, ciclo y periodo.
      */
     @Get('student/:studentId/period/:periodId')
     getStudentEnrollmentsByPeriod(
@@ -40,9 +43,6 @@ export class EnrollmentController {
         return this.enrollmentService.findAll();
     }
 
-    /**
-     * ⚠️ RUTA DINÁMICA - Debe estar DESPUÉS de rutas fijas
-     */
     @Get(':id')
     findOne(@Param('id', ParseIntPipe) id: number) {
         return this.enrollmentService.findOne(id);

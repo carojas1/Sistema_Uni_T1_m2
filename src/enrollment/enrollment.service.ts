@@ -13,15 +13,16 @@ export class EnrollmentService {
     constructor(private prismaAcademic: PrismaAcademicService) { }
 
     /**
-     * PARTE 4: Transacción ACID para matricular estudiante
-     * - Atomic: Todo-o-nada mediante $transaction
-     * - Consistent: Validaciones de negocio (estudiante activo, cupos disponibles)
-     * - Isolated: UPDATE con WHERE para evitar race conditions
-     * - Durable: PostgreSQL garantiza persistencia
+     * Ejecuta una transacción ACID completa para matricular un estudiante en una materia.
+     * Se implementan los cuatro principios:
+     * - Atomicidad: Todo el proceso se ejecuta o ninguna parte mediante $transaction
+     * - Consistencia: Validaciones de negocio garantizan estados válidos del sistema
+     * - Aislamiento: UPDATE con WHERE previene race conditions en decrementos de cupos
+     * - Durabilidad: PostgreSQL garantiza persistencia de cambios confirmados
      */
     async enrollStudent(createEnrollmentDto: CreateEnrollmentDto) {
         return this.prismaAcademic.$transaction(async (prisma) => {
-            // 1. Verificar que el estudiante existe y está activo
+            // Validación de existencia y estado activo del estudiante
             const student = await prisma.student.findUnique({
                 where: { id: createEnrollmentDto.studentId },
             });
@@ -34,7 +35,7 @@ export class EnrollmentService {
                 throw new BadRequestException(`Student with ID ${createEnrollmentDto.studentId} is not active`);
             }
 
-            // 2. Verificar que la materia existe
+            // Validación de existencia de la materia
             const subject = await prisma.subject.findUnique({
                 where: { id: createEnrollmentDto.subjectId },
             });
@@ -43,7 +44,7 @@ export class EnrollmentService {
                 throw new NotFoundException(`Subject with ID ${createEnrollmentDto.subjectId} not found`);
             }
 
-            // 3. Verificar que el periodo académico existe y está activo
+            // Validación de existencia y estado activo del periodo académico
             const academicPeriod = await prisma.academicPeriod.findUnique({
                 where: { id: createEnrollmentDto.academicPeriodId },
             });
@@ -56,12 +57,12 @@ export class EnrollmentService {
                 throw new BadRequestException(`Academic period "${academicPeriod.name}" is not active`);
             }
 
-            // 4. Verificar cupos disponibles ANTES de intentar matricular
+            // Verificación de disponibilidad de cupos antes del intento de matrícula
             if (subject.availableQuota <= 0) {
                 throw new BadRequestException(`No available quota for subject "${subject.name}"`);
             }
 
-            // 5. Verificar que no exista matrícula duplicada (ya cubierto por unique constraint, pero validamos antes)
+            // Validación contra matrículas duplicadas utilizando el constraint unique compuesto
             const existingEnrollment = await prisma.enrollment.findUnique({
                 where: {
                     studentId_subjectId_academicPeriodId: {
@@ -78,13 +79,17 @@ export class EnrollmentService {
                 );
             }
 
-            // 6. Decrementar cupo disponible con condición WHERE (evita race condition)
-            // Si 2 transacciones intentan matricularse al mismo tiempo, solo una logrará decrementar
+            /**
+             * Decremento atómico del cupo disponible con condición WHERE.
+             * Esta implementación maneja correctamente escenarios de concurrencia:
+             * si dos procesos intentan decrementar simultáneamente el último cupo,
+             * solo uno tendrá éxito mientras el otro recibirá count = 0.
+             */
             const updateResult = await prisma.subject.updateMany({
                 where: {
                     id: createEnrollmentDto.subjectId,
                     availableQuota: {
-                        gt: 0, // Solo actualiza si hay cupos disponibles
+                        gt: 0,
                     },
                 },
                 data: {
@@ -94,12 +99,12 @@ export class EnrollmentService {
                 },
             });
 
-            // Si no se actualizó ningún registro, significa que ya no hay cupos (race condition)
+            // Si count = 0, otro proceso concurrente tomó el último cupo
             if (updateResult.count === 0) {
                 throw new BadRequestException(`No available quota for subject "${subject.name}" (concurrent enrollment)`);
             }
 
-            // 7. Registrar la matrícula
+            // Registro de la matrícula con todas las relaciones incluidas
             const enrollment = await prisma.enrollment.create({
                 data: {
                     studentId: createEnrollmentDto.studentId,
@@ -127,7 +132,9 @@ export class EnrollmentService {
     }
 
     /**
-     * PARTE 1.D: Mostrar matrículas de un estudiante en un período académico determinado
+     * Consulta derivada que retorna las matrículas de un estudiante en un periodo académico específico.
+     * Se incluyen las relaciones completas con subject, career, cycle y academic period
+     * para proporcionar contexto completo de cada matrícula.
      */
     async getStudentEnrollmentsByPeriod(studentId: number, academicPeriodId: number) {
         const student = await this.prismaAcademic.student.findUnique({
@@ -182,8 +189,11 @@ export class EnrollmentService {
     }
 
     /**
-     * PARTE 3: Consulta SQL nativa - Reporte de estudiantes con total de materias matriculadas
-     * Ordenado por número de materias DESC
+     * Implementa una consulta SQL nativa mediante $queryRaw para generar un reporte.
+     * La query ejecuta un JOIN entre students, careers y enrollments, agrupando por estudiante
+     * y contando el número total de matrículas. Se filtran estudiantes sin matrículas mediante
+     * HAVING y se ordena descendentemente por cantidad de materias matriculadas.
+     * La conversión de bigint a number es necesaria para la serialización JSON.
      */
     async getEnrollmentReport() {
         const rawResults = await this.prismaAcademic.$queryRaw<EnrollmentReportRow[]>`
@@ -199,7 +209,7 @@ export class EnrollmentService {
       ORDER BY total_subjects DESC
     `;
 
-        // Convertir bigint a number para serialización JSON
+        // Conversión de tipos BigInt a Number para compatibilidad con JSON
         const results = rawResults.map((row) => ({
             studentName: row.student_name,
             careerName: row.career_name,
@@ -257,12 +267,16 @@ export class EnrollmentService {
         return enrollment;
     }
 
+    /**
+     * Elimina una matrícula y devuelve el cupo a la materia mediante una transacción.
+     * Se garantiza que el incremento del cupo y la eliminación del registro ocurran atómicamente,
+     * evitando inconsistencias en caso de fallos durante el proceso.
+     */
     async remove(id: number) {
         const enrollment = await this.findOne(id);
 
-        // Transacción para eliminar matrícula y devolver cupo
         return this.prismaAcademic.$transaction(async (prisma) => {
-            // Incrementar cupo disponible
+            // Incremento del cupo disponible
             await prisma.subject.update({
                 where: { id: enrollment.subjectId },
                 data: {
@@ -272,7 +286,7 @@ export class EnrollmentService {
                 },
             });
 
-            // Eliminar matrícula
+            // Eliminación del registro de matrícula
             return prisma.enrollment.delete({
                 where: { id },
             });

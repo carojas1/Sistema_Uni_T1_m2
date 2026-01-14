@@ -13,7 +13,8 @@ export class AcademicPeriodController {
     }
 
     /**
-     * ⚠️ RUTA FIJA - Debe estar ANTES de /:id
+     * Retorna únicamente los periodos académicos que se encuentran actualmente activos.
+     * Este endpoint facilita la selección de periodos válidos para operaciones de matrícula.
      */
     @Get('active')
     findActive() {
@@ -25,9 +26,6 @@ export class AcademicPeriodController {
         return this.academicPeriodService.findAll();
     }
 
-    /**
-     * ⚠️ RUTA DINÁMICA - Debe estar DESPUÉS de rutas fijas
-     */
     @Get(':id')
     findOne(@Param('id', ParseIntPipe) id: number) {
         return this.academicPeriodService.findOne(id);

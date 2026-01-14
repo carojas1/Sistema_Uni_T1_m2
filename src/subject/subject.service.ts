@@ -124,8 +124,10 @@ export class SubjectService {
   }
 
   /**
-   * PARTE 1.B: Obtener las materias asociadas a una carrera específica
-   * GET /subjects/by-career/:careerId
+   * Consulta derivada que retorna las materias pertenecientes a una carrera específica.
+   * Se incluyen las relaciones con career, specialty y cycle, ordenando los resultados
+   * primero por número de ciclo en orden ascendente y luego alfabéticamente por nombre de materia.
+   * Esta ordenación facilita la presentación lógica del plan de estudios.
    */
   async findByCareer(careerId: number) {
     const career = await this.prismaAcademic.career.findUnique({

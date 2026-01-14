@@ -120,8 +120,9 @@ export class StudentService {
   }
 
   /**
-   * PARTE 1.A: Listar todos los estudiantes activos junto con su carrera
-   * GET /students/active-with-career
+   * Consulta derivada que retorna estudiantes activos junto con su carrera.
+   * Se utiliza el campo isActive como filtro principal y se incluyen las relaciones
+   * career y specialty mediante el mecanismo de includes de Prisma ORM.
    */
   async findActiveWithCareer() {
     return this.prismaAcademic.student.findMany({
@@ -142,11 +143,10 @@ export class StudentService {
   }
 
   /**
-   * PARTE 2.E: Buscar estudiantes que:
-   * - estén activos AND
-   * - pertenezcan a una carrera específica AND
-   * - tengan matrícula en un período académico seleccionado
-   * GET /students/filter?careerId=X&periodId=Y
+   * Implementa un filtro complejo utilizando el operador lógico AND para combinar
+   * tres condiciones simultáneas: estudiante activo, pertenencia a una carrera específica
+   * y existencia de al menos una matrícula en el periodo académico indicado.
+   * Esta implementación demuestra el uso de operadores lógicos en consultas Prisma.
    */
   async findActiveByCareerAndPeriod(careerId: number, periodId: number) {
     return this.prismaAcademic.student.findMany({

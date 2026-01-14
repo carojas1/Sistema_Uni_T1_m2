@@ -13,8 +13,9 @@ export class StudentController {
   }
 
   /**
-   * PARTE 1.A: Estudiantes activos con su carrera
-   * ⚠️ RUTA FIJA - Debe estar ANTES de /:id
+   * Retorna todos los estudiantes que se encuentran activos en el sistema,
+   * incluyendo la información completa de su carrera y especialidad asociada.
+   * Esta consulta forma parte de los requerimientos de consultas derivadas con ORM.
    */
   @Get('active-with-career')
   findActiveWithCareer() {
@@ -22,8 +23,9 @@ export class StudentController {
   }
 
   /**
-   * PARTE 2.E: Filtrar estudiantes (activos + carrera + periodo)
-   * ⚠️ RUTA FIJA - Debe estar ANTES de /:id
+   * Aplica un filtro compuesto utilizando operadores lógicos AND para retornar
+   * estudiantes que cumplan simultáneamente tres condiciones: estar activos,
+   * pertenecer a una carrera específica y tener matrículas en un periodo académico dado.
    */
   @Get('filter')
   findActiveByCareerAndPeriod(
@@ -41,9 +43,6 @@ export class StudentController {
     return this.studentService.findAll(parseInt(page), parseInt(limit));
   }
 
-  /**
-   * ⚠️ RUTA DINÁMICA - Debe estar DESPUÉS de rutas fijas
-   */
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.studentService.findOne(id);

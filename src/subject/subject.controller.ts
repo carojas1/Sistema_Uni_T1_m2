@@ -13,8 +13,9 @@ export class SubjectController {
   }
 
   /**
-   * PARTE 1.B: Materias de una carrera específica
-   * ⚠️ RUTA FIJA - Debe estar ANTES de /:id
+   * Retorna todas las materias asociadas a una carrera específica.
+   * Los resultados se ordenan por número de ciclo y nombre de materia,
+   * incluyendo información completa de carrera, ciclo y especialidad.
    */
   @Get('by-career/:careerId')
   findByCareer(@Param('careerId', ParseIntPipe) careerId: number) {
@@ -29,9 +30,6 @@ export class SubjectController {
     return this.subjectService.findAll(parseInt(page), parseInt(limit));
   }
 
-  /**
-   * ⚠️ RUTA DINÁMICA - Debe estar DESPUÉS de rutas fijas
-   */
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.subjectService.findOne(id);

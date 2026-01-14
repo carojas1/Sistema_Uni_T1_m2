@@ -13,8 +13,9 @@ export class TeacherController {
   }
 
   /**
-   * PARTE 1.C: Docentes que imparten más de una asignatura
-   * ⚠️ RUTA FIJA - Debe estar ANTES de /:id
+   * Retorna docentes que imparten dos o más asignaturas en el sistema.
+   * El filtrado se realiza a nivel de aplicación contando las relaciones
+   * en la entidad intermedia teacher_subjects.
    */
   @Get('multiple-subjects')
   findTeachingMultipleSubjects() {
@@ -22,8 +23,9 @@ export class TeacherController {
   }
 
   /**
-   * PARTE 2.F: Filtro complejo con operadores AND/OR/NOT
-   * ⚠️ RUTA FIJA - Debe estar ANTES de /:id
+   * Aplica un filtro complejo que combina operadores lógicos AND, OR y NOT.
+   * Retorna docentes de tiempo completo que cumplan al menos una de dos condiciones:
+   * dictar asignaturas o estar en estado activo.
    */
   @Get('filter-complex')
   findWithComplexFilter() {
@@ -38,9 +40,6 @@ export class TeacherController {
     return this.teacherService.findAll(parseInt(page), parseInt(limit));
   }
 
-  /**
-   * ⚠️ RUTA DINÁMICA - Debe estar DESPUÉS de rutas fijas
-   */
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.teacherService.findOne(id);

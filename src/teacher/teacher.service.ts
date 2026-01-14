@@ -84,11 +84,12 @@ export class TeacherService {
   }
 
   /**
-   * PARTE 1.C: Listar docentes que imparten más de una asignatura
-   * GET /teachers/multiple-subjects
+   * Consulta derivada que identifica docentes asignados a dos o más asignaturas.
+   * Se recuperan todos los docentes con sus asignaciones y se filtra a nivel de aplicación
+   * aquellos cuya cantidad de relaciones teacher_subject sea superior a uno.
+   * Se incluye un campo calculado totalSubjects para facilitar el análisis posterior.
    */
   async findTeachingMultipleSubjects() {
-    // Obtener docentes con conteo de materias
     const teachers = await this.prismaAcademic.teacher.findMany({
       include: {
         subjects: {
@@ -104,7 +105,6 @@ export class TeacherService {
       },
     });
 
-    // Filtrar docentes con más de una materia
     const teachersWithMultipleSubjects = teachers.filter((teacher) => teacher.subjects.length > 1);
 
     return teachersWithMultipleSubjects.map((teacher) => ({
@@ -114,13 +114,13 @@ export class TeacherService {
   }
 
   /**
-   * PARTE 2.F: Filtrar docentes que:
-   * - sean de tiempo completo (FULL_TIME) AND
-   * - dicten asignaturas (subjects count > 0) OR
-   * - NOT estén inactivos (isActive = true)
-   *
-   * Interpretación: (employmentType = FULL_TIME) AND (tiene materias OR está activo)
-   * Esto significa: docentes de tiempo completo que enseñan O que están activos
+   * Implementa un filtro utilizando operadores lógicos complejos: AND, OR y NOT.
+   * Se retornan docentes que satisfagan la siguiente lógica:
+   * - Tipo de empleo debe ser tiempo completo (FULL_TIME) Y
+   * - Al menos una de estas condiciones:
+   *   - Tiene asignaturas asignadas O
+   *   - Su estado NO es inactivo (equivalente a isActive = true)
+   * Esta consulta demuestra el uso de operadores lógicos anidados en Prisma ORM.
    */
   async findWithComplexFilter() {
     const teachers = await this.prismaAcademic.teacher.findMany({
@@ -133,12 +133,12 @@ export class TeacherService {
             OR: [
               {
                 subjects: {
-                  some: {}, // Tiene al menos una materia asignada
+                  some: {},
                 },
               },
               {
                 NOT: {
-                  isActive: false, // NOT inactivo = activo
+                  isActive: false,
                 },
               },
             ],
