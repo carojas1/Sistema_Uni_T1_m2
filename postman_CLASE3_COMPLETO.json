@@ -1,0 +1,344 @@
+{
+    "info": {
+        "name": "Sistema Universitario - Actividad CLASE 3",
+        "_postman_id": "clase3-actividad-completa",
+        "description": "Colección funcional con todos los endpoints de la Actividad Práctica CLASE 3",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. CONFIGURACIÓN INICIAL",
+            "item": [
+                {
+                    "name": "Crear Periodo Académico Activo",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"2026-1\",\n  \"startDate\": \"2026-03-01T00:00:00.000Z\",\n  \"endDate\": \"2026-07-31T23:59:59.000Z\",\n  \"isActive\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/academic-periods",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "academic-periods"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Listar Periodos Activos",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/academic-periods/active",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "academic-periods",
+                                "active"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. PARTE 1 - Consultas Derivadas (ORM)",
+            "item": [
+                {
+                    "name": "1.A - Estudiantes Activos con Carrera",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/students/active-with-career",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "students",
+                                "active-with-career"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.B - Materias de una Carrera",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/subjects/by-career/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "subjects",
+                                "by-career",
+                                "1"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.C - Docentes con 2+ Materias",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/teachers/multiple-subjects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teachers",
+                                "multiple-subjects"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.D - Matrículas por Estudiante y Periodo",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/enrollments/student/1/period/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "enrollments",
+                                "student",
+                                "1",
+                                "period",
+                                "1"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. PARTE 2 - Operadores Lógicos (AND/OR/NOT)",
+            "item": [
+                {
+                    "name": "2.E - Filtrar Estudiantes (AND)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/students/filter?careerId=1&periodId=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "students",
+                                "filter"
+                            ],
+                            "query": [
+                                {
+                                    "key": "careerId",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "periodId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "2.F - Filtrar Docentes (AND/OR/NOT)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/teachers/filter-complex",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teachers",
+                                "filter-complex"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. PARTE 3 - SQL Nativa ($queryRaw)",
+            "item": [
+                {
+                    "name": "3.G - Reporte SQL Nativo",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/enrollments/report",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "enrollments",
+                                "report"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. PARTE 4 - Transacción ACID",
+            "item": [
+                {
+                    "name": "4.H - Matricular Estudiante (ACID)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"studentId\": 1,\n  \"subjectId\": 1,\n  \"academicPeriodId\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/enrollments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "enrollments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Listar Todas las Matrículas",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/enrollments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "enrollments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Cancelar Matrícula (Devuelve Cupo)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/enrollments/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "enrollments",
+                                "1"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. ENDPOINTS AUXILIARES",
+            "item": [
+                {
+                    "name": "Listar Estudiantes",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/students",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "students"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Listar Docentes",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/teachers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teachers"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Listar Materias",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/subjects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "subjects"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Listar Carreras",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/careers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "careers"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
