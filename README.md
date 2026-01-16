@@ -1,60 +1,114 @@
-
 # 🎓 Sistema Universitario - API REST
 
-API REST desarrollada con NestJS y Prisma para la gestión de un sistema universitario, incluyendo especialidades, carreras, ciclos, materias, estudiantes y profesores.
+API REST desarrollada con **NestJS 11** y **Prisma 7** para la gestión integral de un sistema universitario. Implementa arquitectura multi-base de datos, autenticación JWT, transacciones ACID, y consultas avanzadas con ORM.
 
 ## 📋 Tabla de Contenidos
 
+- [Características Principales](#características-principales)
 - [Tecnologías](#tecnologías)
+- [Arquitectura Multi-Base de Datos](#arquitectura-multi-base-de-datos)
 - [Requisitos Previos](#requisitos-previos)
 - [Instalación](#instalación)
 - [Configuración](#configuración)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Modelo de Datos](#modelo-de-datos)
-- [Endpoints](#endpoints)
-- [Ejemplos de Uso](#ejemplos-de-uso)
+- [Autenticación JWT](#autenticación-jwt)
+- [Endpoints API](#endpoints-api)
+- [Consultas Avanzadas](#consultas-avanzadas)
 - [Scripts Disponibles](#scripts-disponibles)
+- [Pruebas con Postman](#pruebas-con-postman)
+
+## ⭐ Características Principales
+
+- ✅ **Arquitectura Multi-Base de Datos** con Prisma 7 (Auth, Academic, Support)
+- ✅ **Autenticación JWT** con roles y permisos
+- ✅ **Transacciones ACID** para operaciones de matrícula
+- ✅ **Consultas Derivadas** con relaciones complejas
+- ✅ **Consultas SQL Nativas** con `$queryRaw`
+- ✅ **Operadores Lógicos** (AND, OR, NOT) en filtros
+- ✅ **Paginación** en todos los endpoints de listado
+- ✅ **Validación de DTOs** con class-validator
+- ✅ **Seeds Idempotentes** para datos de prueba
+- ✅ **Driver Adapters** de Prisma 7 habilitados
 
 ## 🚀 Tecnologías
 
-- **NestJS 10+** - Framework de Node.js
-- **Prisma 5+** - ORM para PostgreSQL
-- **PostgreSQL** - Base de datos (Neon)
-- **TypeScript** - Lenguaje de programación
-- **class-validator** - Validación de DTOs
+| Tecnología | Versión | Descripción |
+|------------|---------|-------------|
+| **NestJS** | 11.x | Framework backend |
+| **Prisma** | 5.22.0 | ORM con Driver Adapters |
+| **PostgreSQL** | 15+ | Base de datos (Neon) |
+| **TypeScript** | 5.7.x | Lenguaje de programación |
+| **JWT** | 11.x | Autenticación |
+| **Passport** | 0.7.x | Middleware de auth |
+| **bcrypt** | 6.x | Hash de contraseñas |
+| **class-validator** | 0.14.x | Validación de DTOs |
+
+## 🏗️ Arquitectura Multi-Base de Datos
+
+El sistema implementa **separación de responsabilidades** mediante tres bases de datos independientes:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        SISTEMA UNIVERSITARIO                     │
+├─────────────────┬─────────────────────┬─────────────────────────┤
+│   AUTH DB       │   ACADEMIC DB       │   SUPPORT DB            │
+│   (Seguridad)   │   (Académico)       │   (Auditoría)           │
+├─────────────────┼─────────────────────┼─────────────────────────┤
+│ • User          │ • Specialty         │ • AuditLog              │
+│ • Role          │ • Career            │ • SystemLog             │
+│ • Permission    │ • Cycle             │                         │
+│ • UserRole      │ • Subject           │                         │
+│ • RolePermission│ • Teacher           │                         │
+│                 │ • Student           │                         │
+│                 │ • TeacherSubject    │                         │
+│                 │ • StudentSubject    │                         │
+│                 │ • AcademicPeriod    │                         │
+│                 │ • Enrollment        │                         │
+└─────────────────┴─────────────────────┴─────────────────────────┘
+```
+
+### Schemas de Prisma
+
+```
+prisma/
+├── schema-auth.prisma      → cliente en ./generated/client-auth
+├── schema-academic.prisma  → cliente en ./generated/client-academic
+├── schema-support.prisma   → cliente en ./generated/client-support
+└── generated/
+    ├── client-auth/
+    ├── client-academic/
+    └── client-support/
+```
 
 ## 📦 Requisitos Previos
 
 - Node.js 18+ y npm
-- Base de datos PostgreSQL (local o remota)
+- PostgreSQL 15+ (local o Neon)
 - Git
 
 ## ⚙️ Instalación
 
-1. **Clonar el repositorio:**
 ```bash
+# 1. Clonar el repositorio
 git clone <url-repositorio>
-cd project_su
-```
+cd sistemaUniversitario
 
-2. **Instalar dependencias:**
-```bash
+# 2. Instalar dependencias
 npm install
-```
 
-3. **Configurar variables de entorno:**
-```bash
+# 3. Configurar variables de entorno
 cp .env.example .env
-```
+# Editar .env con tus credenciales
 
-4. **Ejecutar migraciones:**
-```bash
-npx prisma generate
-npx prisma migrate dev --name init
-```
+# 4. Generar clientes Prisma y migrar
+npm run db:generate:all
+npm run migrate:dev:all
 
-5. **Iniciar el servidor:**
-```bash
+# 5. Cargar datos de prueba
+npm run db:seed:all
+
+# 6. Iniciar el servidor
 npm run start:dev
 ```
 
@@ -65,293 +119,505 @@ La API estará disponible en: `http://localhost:3000`
 ### Archivo `.env`
 
 ```properties
-DATABASE_URL="postgresql://usuario:password@host:5432/database?sslmode=require"
-PORT=3000
-NODE_ENV=development
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Database Auth - PostgreSQL
+DATABASE_AUTH_URL=postgresql://usuario:password@host:5432/universidad_auth?schema=public
+
+# Database Academic - PostgreSQL
+DATABASE_ACADEMIC_URL=postgresql://usuario:password@host:5432/universidad_academic?schema=public
+
+# Database Support - PostgreSQL
+DATABASE_SUPPORT_URL=postgresql://usuario:password@host:5432/universidad_support?schema=public
 ```
 
 ### Prisma Studio
 
-Para visualizar y gestionar la base de datos:
 ```bash
-npx prisma studio
+# Visualizar base de datos Auth
+npx prisma studio --schema=prisma/schema-auth.prisma
+
+# Visualizar base de datos Academic
+npx prisma studio --schema=prisma/schema-academic.prisma
+
+# Visualizar base de datos Support
+npx prisma studio --schema=prisma/schema-support.prisma
 ```
-Abre: `http://localhost:5555`
 
 ## 📁 Estructura del Proyecto
 
 ```
 src/
-├── prism/              # Módulo de Prisma (servicio global)
-│   ├── prism.service.ts
-│   └── prism.module.ts
-├── user/               # Módulo de usuarios
-│   ├── dto/
-│   ├── user.controller.ts
-│   ├── user.service.ts
-│   └── user.module.ts
-├── specialty/          # Módulo de especialidades
-├── career/             # Módulo de carreras
-├── cycle/              # Módulo de ciclos
-├── subject/            # Módulo de materias
-├── teacher/            # Módulo de profesores
-├── student/            # Módulo de estudiantes
+├── auth/                   # 🔐 Módulo de autenticación
+│   ├── dto/               # RegisterDto, LoginDto
+│   ├── guards/            # JwtAuthGuard
+│   ├── decorators/        # Decoradores personalizados
+│   ├── jwt.strategy.ts    # Estrategia JWT
+│   ├── auth.service.ts    # Lógica de auth
+│   ├── auth.controller.ts # Endpoints auth
+│   └── auth.module.ts
+├── prisma/                 # 🗄️ Servicios Prisma
+│   ├── prisma-auth.service.ts
+│   ├── prisma-academic.service.ts
+│   └── prisma-support.service.ts
+├── specialty/              # 🎯 Especialidades
+├── career/                 # 🎓 Carreras
+├── cycle/                  # 🔄 Ciclos académicos
+├── subject/                # 📚 Materias
+├── teacher/                # 👨‍🏫 Profesores
+├── teacher-subject/        # 📖 Asignación docente-materia
+├── student/                # 🎒 Estudiantes
+├── student-subject/        # 📝 Calificaciones
+├── academic-period/        # 📅 Periodos académicos
+├── enrollment/             # ✅ Matrículas (Transacciones ACID)
+├── user/                   # 👤 Usuarios
+├── generated/              # 🔧 Clientes Prisma generados
 ├── app.module.ts
 └── main.ts
 ```
 
-Cada módulo contiene:
-- **DTO**: Validación de datos de entrada
-- **Service**: Lógica de negocio
-- **Controller**: Endpoints REST
-- **Module**: Configuración del módulo
-
 ## 🗄️ Modelo de Datos
 
-### Relaciones principales:
+### Base de Datos Auth
 
 ```
-Specialty (1) ──→ (N) Career
-Career (1) ──→ (N) Subject
-Career (1) ──→ (N) Student
-Cycle (1) ──→ (N) Subject
-Teacher (N) ←──→ (N) Subject (TeacherSubject)
-Student (N) ←──→ (N) Subject (StudentSubject)
+User ─────────────> UserRole <─────────── Role
+                                            │
+                                            ▼
+                                     RolePermission
+                                            │
+                                            ▼
+                                       Permission
 ```
 
-### Tablas:
-
-- **User**: Usuarios del sistema
-- **Specialty**: Especialidades (Ingeniería, Medicina, etc.)
-- **Career**: Carreras universitarias
-- **Cycle**: Ciclos académicos (1er ciclo, 2do ciclo, etc.)
-- **Subject**: Materias/Asignaturas
-- **Teacher**: Profesores
-- **Student**: Estudiantes
-- **TeacherSubject**: Relación profesor-materia
-- **StudentSubject**: Inscripciones y calificaciones
-
-## 🌐 Endpoints
-
-Todos los endpoints soportan paginación con los parámetros `?page=1&limit=10`
-
-### 👤 Users
+### Base de Datos Academic
 
 ```
-POST   /users          - Crear usuario
-GET    /users          - Listar usuarios (paginado)
-GET    /users/:id      - Obtener usuario por ID
+Specialty (1) ──────────────→ (N) Career
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+              Subject (N)      Student (N)     [relations]
+                    │               │
+           ┌───────┴───────┐       │
+           ▼               ▼       │
+    TeacherSubject    StudentSubject
+           ▲                       │
+           │                       │
+       Teacher                     │
+                                   ▼
+                            Enrollment ← AcademicPeriod
 ```
 
-### 🎯 Specialties
+### Tablas Principales
 
-```
-POST   /specialties    - Crear especialidad
-GET    /specialties    - Listar especialidades
-GET    /specialties/:id - Obtener especialidad por ID
-```
+| Tabla | Descripción |
+|-------|-------------|
+| `User` | Usuarios del sistema con autenticación |
+| `Role` | Roles (admin, teacher, student) |
+| `Permission` | Permisos granulares |
+| `Specialty` | Especialidades (Ingeniería, Medicina) |
+| `Career` | Carreras universitarias |
+| `Cycle` | Ciclos académicos (1er, 2do ciclo) |
+| `Subject` | Materias con créditos y cupos |
+| `Teacher` | Profesores con tipo de empleo |
+| `Student` | Estudiantes vinculados a carreras |
+| `TeacherSubject` | Asignación docente-materia |
+| `StudentSubject` | Inscripciones con calificaciones |
+| `AcademicPeriod` | Periodos (2026-1, 2026-2) |
+| `Enrollment` | Matrículas con transacciones ACID |
+| `AuditLog` | Registro de auditoría |
+| `SystemLog` | Logs del sistema |
 
-### 🎓 Careers
+## 🔐 Autenticación JWT
 
-```
-POST   /careers        - Crear carrera
-GET    /careers        - Listar carreras
-GET    /careers/:id    - Obtener carrera por ID
-```
+### Endpoints de Auth
 
-### 🔄 Cycles
-
-```
-POST   /cycles         - Crear ciclo
-GET    /cycles         - Listar ciclos
-GET    /cycles/:id     - Obtener ciclo por ID
-```
-
-### 📚 Subjects
-
-```
-POST   /subjects       - Crear materia
-GET    /subjects       - Listar materias
-GET    /subjects/:id   - Obtener materia por ID
+```http
+POST /auth/register    # Registrar nuevo usuario
+POST /auth/login       # Iniciar sesión (retorna JWT)
+GET  /auth/me          # Obtener usuario actual (protegido)
 ```
 
-### 👨‍🏫 Teachers
-
-```
-POST   /teachers       - Crear profesor
-GET    /teachers       - Listar profesores
-GET    /teachers/:id   - Obtener profesor por ID
-```
-
-### 🎓 Students
-
-```
-POST   /students       - Crear estudiante
-GET    /students       - Listar estudiantes
-GET    /students/:id   - Obtener estudiante por ID
-```
-
-## 📝 Ejemplos de Uso
-
-### Crear una Especialidad
+### Registro de Usuario
 
 ```bash
-POST /specialties
+POST /auth/register
 Content-Type: application/json
 
 {
-  "name": "Ingeniería"
+  "name": "Christian Rojas",
+  "email": "christian@university.com",
+  "username": "christian.rojas",
+  "password": "SecurePass123"
+}
+```
+
+### Login
+
+```bash
+POST /auth/login
+Content-Type: application/json
+
+{
+  "username": "christian.rojas",
+  "password": "SecurePass123"
 }
 ```
 
 **Respuesta:**
 ```json
 {
-  "id": 1,
-  "name": "Ingeniería"
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
-### Crear una Carrera
+### Usar Token en Peticiones Protegidas
 
 ```bash
-POST /careers
-Content-Type: application/json
+GET /auth/me
+Authorization: Bearer <access_token>
+```
 
+## 🌐 Endpoints API
+
+### 🔐 Autenticación (`/auth`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/auth/register` | Registrar usuario |
+| POST | `/auth/login` | Iniciar sesión |
+| GET | `/auth/me` | Usuario actual (🔒) |
+
+### 🎯 Especialidades (`/specialties`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/specialties` | Crear especialidad |
+| GET | `/specialties` | Listar (paginado) |
+| GET | `/specialties/:id` | Obtener por ID |
+| PATCH | `/specialties/:id` | Actualizar |
+| DELETE | `/specialties/:id` | Eliminar |
+
+### 🎓 Carreras (`/careers`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/careers` | Crear carrera |
+| GET | `/careers` | Listar (paginado) |
+| GET | `/careers/:id` | Obtener por ID |
+| PATCH | `/careers/:id` | Actualizar |
+| DELETE | `/careers/:id` | Eliminar |
+
+### 🔄 Ciclos (`/cycles`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/cycles` | Crear ciclo |
+| GET | `/cycles` | Listar (paginado) |
+| GET | `/cycles/:id` | Obtener por ID |
+| PATCH | `/cycles/:id` | Actualizar |
+| DELETE | `/cycles/:id` | Eliminar |
+
+### 📚 Materias (`/subjects`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/subjects` | Crear materia |
+| GET | `/subjects` | Listar (paginado) |
+| GET | `/subjects/:id` | Obtener por ID |
+| **GET** | `/subjects/by-career/:careerId` | **📊 Materias por carrera (consulta derivada)** |
+| PATCH | `/subjects/:id` | Actualizar |
+| DELETE | `/subjects/:id` | Eliminar |
+
+### 👨‍🏫 Profesores (`/teachers`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/teachers` | Crear profesor |
+| GET | `/teachers` | Listar (paginado) |
+| GET | `/teachers/:id` | Obtener por ID |
+| **GET** | `/teachers/multiple-subjects` | **📊 Docentes con 2+ materias** |
+| **GET** | `/teachers/filter-complex` | **📊 Filtro AND/OR/NOT** |
+| PATCH | `/teachers/:id` | Actualizar |
+| DELETE | `/teachers/:id` | Eliminar |
+
+### 🎒 Estudiantes (`/students`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/students` | Crear estudiante |
+| GET | `/students` | Listar (paginado) |
+| GET | `/students/:id` | Obtener por ID |
+| **GET** | `/students/active-with-career` | **📊 Activos con carrera (consulta derivada)** |
+| **GET** | `/students/filter?careerId=X&periodId=Y` | **📊 Filtro AND compuesto** |
+| PATCH | `/students/:id` | Actualizar |
+| DELETE | `/students/:id` | Eliminar |
+
+### 📅 Periodos Académicos (`/academic-periods`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/academic-periods` | Crear periodo |
+| GET | `/academic-periods` | Listar todos |
+| GET | `/academic-periods/:id` | Obtener por ID |
+| **GET** | `/academic-periods/active` | **📊 Periodos activos** |
+| PATCH | `/academic-periods/:id` | Actualizar |
+| DELETE | `/academic-periods/:id` | Eliminar |
+
+### ✅ Matrículas (`/enrollments`) - Transacciones ACID
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| **POST** | `/enrollments` | **🔄 Matricular (Transacción ACID)** |
+| GET | `/enrollments` | Listar todas |
+| GET | `/enrollments/:id` | Obtener por ID |
+| **GET** | `/enrollments/report` | **📊 Reporte SQL nativo ($queryRaw)** |
+| **GET** | `/enrollments/student/:studentId/period/:periodId` | **📊 Matrículas por estudiante/periodo** |
+| DELETE | `/enrollments/:id` | Eliminar |
+
+## 🔍 Consultas Avanzadas
+
+### 1. Consultas Derivadas con ORM
+
+#### Estudiantes activos con carrera
+```http
+GET /students/active-with-career
+```
+Retorna estudiantes activos con información completa de carrera y especialidad.
+
+#### Materias por carrera ordenadas
+```http
+GET /subjects/by-career/1
+```
+Materias ordenadas por ciclo y nombre, con relaciones completas.
+
+### 2. Operadores Lógicos (AND, OR, NOT)
+
+#### Filtro AND compuesto
+```http
+GET /students/filter?careerId=1&periodId=2
+```
+Estudiantes que cumplen: activos AND carrera específica AND periodo específico.
+
+#### Filtro complejo AND/OR/NOT
+```http
+GET /teachers/filter-complex
+```
+Docentes de tiempo completo que (dictan materias OR están activos).
+
+### 3. Consulta SQL Nativa
+
+#### Reporte de matrículas
+```http
+GET /enrollments/report
+```
+Consulta con `$queryRaw` que retorna nombre completo, carrera y total de materias matriculadas.
+
+### 4. Transacciones ACID
+
+#### Matrícula transaccional
+```http
+POST /enrollments
+{
+  "studentId": 1,
+  "subjectId": 1,
+  "academicPeriodId": 1
+}
+```
+
+La transacción garantiza:
+- ✅ **Atomicidad**: Todo o nada
+- ✅ **Consistencia**: Validaciones de negocio
+- ✅ **Aislamiento**: Sin conflictos concurrentes
+- ✅ **Durabilidad**: Persistencia confirmada
+
+Validaciones:
+- Estudiante existe y está activo
+- Materia existe y tiene cupo disponible
+- Periodo académico está activo
+- No existe matrícula duplicada
+
+## 🛠️ Scripts Disponibles
+
+### Desarrollo
+
+```bash
+npm run start:dev      # Servidor en modo desarrollo (watch)
+npm run start:debug    # Modo debug
+npm run build          # Compilar proyecto
+npm run start:prod     # Servidor en producción
+```
+
+### Prisma - Generación de Clientes
+
+```bash
+npm run db:generate:auth       # Cliente Auth
+npm run db:generate:academic   # Cliente Academic
+npm run db:generate:support    # Cliente Support
+npm run db:generate:all        # Todos los clientes
+```
+
+### Prisma - Migraciones
+
+```bash
+npm run migrate:dev:auth       # Migrar Auth (desarrollo)
+npm run migrate:dev:academic   # Migrar Academic
+npm run migrate:dev:support    # Migrar Support
+npm run migrate:dev:all        # Migrar todas
+
+npm run migrate:deploy:all     # Migrar todas (producción)
+```
+
+### Prisma - Reset
+
+```bash
+npm run migrate:reset:auth     # Reset Auth
+npm run migrate:reset:academic # Reset Academic
+npm run migrate:reset:support  # Reset Support
+npm run migrate:reset:all      # Reset todas
+```
+
+### Seeds
+
+```bash
+npm run db:seed:auth           # Seed Auth (usuarios, roles)
+npm run db:seed:academic       # Seed Academic (datos completos)
+npm run db:seed:support        # Seed Support (logs)
+npm run db:seed:all            # Seed todas
+```
+
+### Setup Completo
+
+```bash
+npm run db:setup               # Generate + Migrate + Seed (todo)
+```
+
+### Testing
+
+```bash
+npm run test           # Tests unitarios
+npm run test:watch     # Tests en modo watch
+npm run test:cov       # Cobertura de tests
+npm run test:e2e       # Tests end-to-end
+```
+
+## 🧪 Pruebas con Postman
+
+### Colección incluida: `postman_CLASE3_COMPLETO.json`
+
+Importar la colección para probar todos los endpoints.
+
+### Flujo de Pruebas Recomendado
+
+1. **Auth**: Registrar y hacer login
+2. **Specialties**: Crear especialidades
+3. **Cycles**: Crear ciclos
+4. **Careers**: Crear carreras (requiere specialty)
+5. **Subjects**: Crear materias (requiere career, cycle)
+6. **Teachers**: Crear profesores
+7. **Students**: Crear estudiantes (requiere career)
+8. **Academic Periods**: Crear periodos activos
+9. **Enrollments**: Matricular estudiantes
+
+### Ejemplos de Peticiones
+
+#### Crear Especialidad
+```json
+POST /specialties
+{ "name": "Ingeniería", "description": "Facultad de Ingeniería" }
+```
+
+#### Crear Carrera
+```json
+POST /careers
 {
   "name": "Ingeniería de Sistemas",
-  "duration": 5,
+  "totalCycles": 10,
+  "durationYears": 5,
   "specialtyId": 1
 }
 ```
 
-**Respuesta:**
+#### Crear Materia
 ```json
+POST /subjects
 {
-  "id": 1,
-  "name": "Ingeniería de Sistemas",
-  "duration": 5,
-  "specialtyId": 1,
-  "specialty": {
-    "id": 1,
-    "name": "Ingeniería"
-  }
+  "name": "Programación I",
+  "credits": 4,
+  "maxQuota": 30,
+  "careerId": 1,
+  "cycleId": 1
 }
 ```
 
-### Crear un Estudiante
-
-```bash
-POST /students
-Content-Type: application/json
-
+#### Crear Profesor
+```json
+POST /teachers
 {
+  "userId": 1,
+  "firstName": "Carlos",
+  "lastName": "Rodríguez",
+  "email": "carlos@university.com",
+  "phone": "+593987654321",
+  "employmentType": "FULL_TIME"
+}
+```
+
+#### Crear Estudiante
+```json
+POST /students
+{
+  "userId": 2,
   "firstName": "Ana",
   "lastName": "Martínez",
-  "email": "ana.martinez@university.com",
-  "phone": "+593987654321",
+  "email": "ana@university.com",
+  "phone": "+593912345678",
   "careerId": 1
 }
 ```
 
-**Respuesta:**
+#### Crear Periodo Académico
 ```json
+POST /academic-periods
 {
-  "id": 1,
-  "firstName": "Ana",
-  "lastName": "Martínez",
-  "email": "ana.martinez@university.com",
-  "phone": "+593987654321",
-  "careerId": 1,
-  "createdAt": "2025-10-10T18:30:00.000Z",
-  "career": {
-    "id": 1,
-    "name": "Ingeniería de Sistemas",
-    "duration": 5,
-    "specialtyId": 1,
-    "specialty": {
-      "id": 1,
-      "name": "Ingeniería"
-    }
-  }
+  "name": "2026-1",
+  "startDate": "2026-01-15T00:00:00Z",
+  "endDate": "2026-06-30T23:59:59Z",
+  "isActive": true
 }
 ```
 
-### Listar con Paginación
-
-```bash
-GET /students?page=1&limit=10
-```
-
-**Respuesta:**
+#### Matricular Estudiante (Transacción ACID)
 ```json
+POST /enrollments
 {
-  "data": [
-    {
-      "id": 1,
-      "firstName": "Ana",
-      "lastName": "Martínez",
-      "email": "ana.martinez@university.com",
-      "phone": "+593987654321",
-      "careerId": 1,
-      "createdAt": "2025-10-10T18:30:00.000Z",
-      "career": {
-        "id": 1,
-        "name": "Ingeniería de Sistemas",
-        "duration": 5,
-        "specialtyId": 1,
-        "specialty": {
-          "id": 1,
-          "name": "Ingeniería"
-        }
-      }
-    }
-  ],
-  "meta": {
-    "total": 1,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 1
-  }
+  "studentId": 1,
+  "subjectId": 1,
+  "academicPeriodId": 1
 }
-```
-
-## 🛠️ Scripts Disponibles
-
-```bash
-# Desarrollo
-npm run start:dev      # Inicia servidor en modo desarrollo
-
-# Producción
-npm run build          # Compila el proyecto
-npm run start:prod     # Inicia servidor en producción
-
-# Prisma
-npx prisma generate    # Genera cliente Prisma
-npx prisma migrate dev # Crea nueva migración
-npx prisma studio      # Abre interfaz visual de BD
-npx prisma db push     # Sincroniza schema sin migración
-
-# Testing
-npm run test           # Ejecuta tests
 ```
 
 ## ✅ Validaciones
 
-Todas las peticiones POST son validadas automáticamente con `class-validator`:
+Todas las peticiones son validadas automáticamente con `class-validator`:
 
-- **Email**: Debe ser un email válido
-- **Strings**: No pueden estar vacíos
-- **IDs**: Deben ser números enteros
-- **Relaciones**: Se verifica que existan antes de crear
+- **Email**: Formato válido
+- **Strings**: No vacíos, longitud mínima/máxima
+- **IDs**: Números enteros positivos
+- **Enums**: Valores permitidos (FULL_TIME, PART_TIME, HOURLY)
+- **Fechas**: Formato ISO válido
+- **Relaciones**: Existencia verificada
 
-### Ejemplo de error de validación:
+### Ejemplo de Error de Validación
 
 ```json
 {
   "message": [
     "name should not be empty",
-    "email must be an email"
+    "email must be an email",
+    "careerId must be a positive number"
   ],
   "error": "Bad Request",
   "statusCode": 400
@@ -360,106 +626,35 @@ Todas las peticiones POST son validadas automáticamente con `class-validator`:
 
 ## 🔒 Manejo de Errores
 
-La API devuelve errores HTTP estándar:
+| Código | Descripción |
+|--------|-------------|
+| 400 | Bad Request - Validación fallida |
+| 401 | Unauthorized - Token inválido/ausente |
+| 404 | Not Found - Recurso no encontrado |
+| 409 | Conflict - Duplicado (ej: email ya existe) |
+| 500 | Internal Server Error |
 
-- **400**: Bad Request (validación fallida)
-- **404**: Not Found (recurso no encontrado)
-- **500**: Internal Server Error
+## 📊 Orden de Creación de Datos
 
-### Ejemplo de error 404:
+Para evitar errores de relaciones, crear en este orden:
 
-```json
-{
-  "message": "Student with ID 999 not found",
-  "error": "Not Found",
-  "statusCode": 404
-}
-```
+1. ✅ **Auth**: Usuarios (para obtener userIds)
+2. ✅ **Specialties** (sin dependencias)
+3. ✅ **Cycles** (sin dependencias)
+4. ✅ **Careers** (requiere Specialty)
+5. ✅ **Subjects** (requiere Career y Cycle)
+6. ✅ **Teachers** (requiere User)
+7. ✅ **Students** (requiere User y Career)
+8. ✅ **Academic Periods** (sin dependencias)
+9. ✅ **Enrollments** (requiere Student, Subject, Period)
 
-## 📊 Orden de Creación Recomendado
+## 📄 Documentación Adicional
 
-Para evitar errores de relaciones, crear recursos en este orden:
-
-1. ✅ **Specialties** (sin dependencias)
-2. ✅ **Cycles** (sin dependencias)
-3. ✅ **Careers** (requiere Specialty)
-4. ✅ **Subjects** (requiere Career y Cycle)
-5. ✅ **Teachers** (sin dependencias)
-6. ✅ **Students** (requiere Career)
-
-## 🧪 Pruebas con Postman
-
-### Colección de Endpoints
-
-Importa esta colección en Postman o prueba manualmente:
-
-#### 1. Crear Especialidad
-```
-POST http://localhost:3000/specialties
-Body: {"name": "Ingeniería"}
-```
-
-#### 2. Crear Ciclo
-```
-POST http://localhost:3000/cycles
-Body: {"name": "1er Ciclo", "number": 1}
-```
-
-#### 3. Crear Carrera
-```
-POST http://localhost:3000/careers
-Body: {
-  "name": "Ingeniería de Sistemas",
-  "duration": 5,
-  "specialtyId": 1
-}
-```
-
-#### 4. Crear Materia
-```
-POST http://localhost:3000/subjects
-Body: {
-  "name": "Programación I",
-  "credits": 4,
-  "careerId": 1,
-  "cycleId": 1
-}
-```
-
-#### 5. Crear Profesor
-```
-POST http://localhost:3000/teachers
-Body: {
-  "firstName": "Carlos",
-  "lastName": "Rodríguez",
-  "email": "carlos@university.com",
-  "phone": "+593987654321"
-}
-```
-
-#### 6. Crear Estudiante
-```
-POST http://localhost:3000/students
-Body: {
-  "firstName": "Ana",
-  "lastName": "Martínez",
-  "email": "ana@university.com",
-  "careerId": 1
-}
-```
-
-## 📄 Licencia
-
-Este proyecto fue desarrollado como parte de un proyecto académico.
+- `docs/Principio_de_acid.pdf` - Explicación de transacciones ACID
 
 ---
 
-**Desarrollado por:** Daniel Padilla  
+**Desarrollado por:** Christian Rojas  
 **Institución:** Instituto Sudamericano  
-**Fecha:** Octubre 2025
-
-
-# sistemaUniversitario
-#   s i s t e m a u n i v e r s i t a r i o 1  
- #   S i s t e m a _ U n i _ T 1 _ m 2  
- 
+**Tecnología:** NestJS 11 + Prisma 7 + PostgreSQL  
+**Fecha:** Enero 2026
